@@ -5,6 +5,11 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+# for Api documentation
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, inline_serializer
+
+
 from .models import OTP, User
 from .serializers import (
     ChangePasswordSerializer,
@@ -22,6 +27,7 @@ from .utils import send_otp_email
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(request=RegisterSerializer, responses={201: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -35,6 +41,7 @@ class RegisterView(APIView):
 class VerifyEmailView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(request=VerifyEmailSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = VerifyEmailSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -54,6 +61,7 @@ class VerifyEmailView(APIView):
 class ResendOTPView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(request=ResendOTPSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = ResendOTPSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -68,6 +76,7 @@ class ResendOTPView(APIView):
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(request=LoginSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = LoginSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -84,6 +93,13 @@ class LoginView(APIView):
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=inline_serializer(
+        name="LogoutRequest",
+        fields={
+            "refresh": OpenApiTypes.STR,
+        },
+    ), responses={200: OpenApiTypes.OBJECT})
 
     def post(self, request):
         refresh_token = request.data.get("refresh")
@@ -105,9 +121,11 @@ class LogoutView(APIView):
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: UserProfileSerializer})
     def get(self, request):
         return Response(UserProfileSerializer(request.user).data)
 
+    @extend_schema(request=UserProfileSerializer, responses={200: UserProfileSerializer})    
     def patch(self, request):
         serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -118,6 +136,7 @@ class ProfileView(APIView):
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(request=ChangePasswordSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
@@ -129,6 +148,7 @@ class ChangePasswordView(APIView):
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(request=ForgotPasswordSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -147,6 +167,7 @@ class ForgotPasswordView(APIView):
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(request=ResetPasswordSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
         serializer = ResetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
