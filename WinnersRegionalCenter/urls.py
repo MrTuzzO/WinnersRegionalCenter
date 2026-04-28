@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.urls import include, path
-from rest_framework import permissions
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
@@ -10,4 +9,6 @@ urlpatterns = [
 
     path('api/v1/auth/', include('user.urls')),
     path('api/v1/', include('evaluation_request.urls')),
+    path('api/v1/', include('project.urls')),
+    path('api/v1/', include('investment.urls')),
 ]

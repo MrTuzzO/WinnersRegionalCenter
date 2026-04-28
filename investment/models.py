@@ -42,4 +42,4 @@ class Investment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.email} invested ${self.amount} in {self.project.name}"
+        return f"{self.user.email} invested ${self.investment_amount} in {self.project.name}"

@@ -16,3 +16,6 @@ class EvaluationRequestViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return [AllowAny()]
         return [IsAdmin()]
+    
+    def perform_create(self, serializer):
+        serializer.save(is_approved=False)
