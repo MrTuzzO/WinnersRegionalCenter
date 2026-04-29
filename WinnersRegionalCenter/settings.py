@@ -36,10 +36,12 @@ INSTALLED_APPS += [
     'django_cleanup.apps.CleanupConfig',
 
     # Local apps
+    'core',
     'user',
     'project',
     'investment',
     'evaluation_request',
+    'notification',
 ]
 
 AUTH_USER_MODEL = 'user.User'
