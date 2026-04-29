@@ -4,38 +4,26 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from .models import OTP, User
+from .serializers import *
+from .utils import send_otp_email
 
 # for Api documentation
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, inline_serializer
 
+# class RegisterView(APIView):
+#     permission_classes = [AllowAny]
 
-from .models import OTP, User
-from .serializers import (
-    ChangePasswordSerializer,
-    ForgotPasswordSerializer,
-    LoginSerializer,
-    RegisterSerializer,
-    ResendOTPSerializer,
-    ResetPasswordSerializer,
-    UserProfileSerializer,
-    VerifyEmailSerializer,
-)
-from .utils import send_otp_email
-
-
-class RegisterView(APIView):
-    permission_classes = [AllowAny]
-
-    @extend_schema(request=RegisterSerializer, responses={201: OpenApiTypes.OBJECT})
-    def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(
-            {"detail": "Registration successful. Please check your email for the verification OTP."},
-            status=status.HTTP_201_CREATED,
-        )
+#     @extend_schema(request=RegisterSerializer, responses={201: OpenApiTypes.OBJECT})
+#     def post(self, request):
+#         serializer = RegisterSerializer(data=request.data)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#         return Response(
+#             {"detail": "Registration successful. Please check your email for the verification OTP."},
+#             status=status.HTTP_201_CREATED,
+#         )
 
 
 class VerifyEmailView(APIView):

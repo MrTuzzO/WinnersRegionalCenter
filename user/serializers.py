@@ -1,40 +1,39 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .models import OTP, User
 from .utils import send_otp_email
 
 
-class RegisterSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, validators=[validate_password])
-    password_confirm = serializers.CharField(write_only=True)
+# class RegisterSerializer(serializers.ModelSerializer):
+#     password = serializers.CharField(write_only=True, validators=[validate_password])
+#     password_confirm = serializers.CharField(write_only=True)
 
-    class Meta:
-        model = User
-        fields = (
-            "name", "email", "phone_number",
-            "date_of_birth", "current_address",
-            "country", "password", "password_confirm",
-        )
+#     class Meta:
+#         model = User
+#         fields = (
+#             "name", "email", "phone_number",
+#             "date_of_birth", "current_address",
+#             "country", "password", "password_confirm",
+#         )
 
-    def validate(self, attrs):
-        if attrs["password"] != attrs.pop("password_confirm"):
-            raise serializers.ValidationError({"password": "Passwords do not match."})
-        return attrs
+#     def validate(self, attrs):
+#         if attrs["password"] != attrs.pop("password_confirm"):
+#             raise serializers.ValidationError({"password": "Passwords do not match."})
+#         return attrs
 
-    def create(self, validated_data):
-        user = User.objects.create_user(
-            email=validated_data["email"],
-            name=validated_data["name"],
-            phone_number=validated_data["phone_number"],
-            date_of_birth=validated_data["date_of_birth"],
-            current_address=validated_data["current_address"],
-            country=validated_data["country"],
-            password=validated_data["password"],
-        )
-        send_otp_email(user, OTP.PURPOSE_EMAIL_VERIFICATION)
-        return user
+#     def create(self, validated_data):
+#         user = User.objects.create_user(
+#             email=validated_data["email"],
+#             name=validated_data["name"],
+#             phone_number=validated_data["phone_number"],
+#             date_of_birth=validated_data["date_of_birth"],
+#             current_address=validated_data["current_address"],
+#             country=validated_data["country"],
+#             password=validated_data["password"],
+#         )
+#         send_otp_email(user, OTP.PURPOSE_EMAIL_VERIFICATION)
+#         return user
 
 
 class VerifyEmailSerializer(serializers.Serializer):
