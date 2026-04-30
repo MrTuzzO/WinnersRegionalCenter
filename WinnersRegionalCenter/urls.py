@@ -13,4 +13,5 @@ urlpatterns = [
     path('api/v1/', include('project.urls')),
     path('api/v1/', include('investment.urls')),
     path('api/v1/', include('notification.urls')),
+    path('api/v1/', include('support.urls')),
 ]
