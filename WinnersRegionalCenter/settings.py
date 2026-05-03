@@ -135,6 +135,9 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+
+    # "DEFAULT_RENDERER_CLASSES": ["core.renderers.StandardRenderer"],
+    # "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
 }
 
 
