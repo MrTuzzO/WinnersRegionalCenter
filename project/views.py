@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import viewsets
 from user.permission import IsAdminOrReadOnly
 from rest_framework.pagination import PageNumberPagination
@@ -13,6 +15,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
     pagination_class = PageNumberPagination
     permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['status']
+    search_fields = ['name', 'description']
+    ordering_fields = ['created_at']
 
     @action(detail=False, methods=['get'], url_path='my_projects', permission_classes=[IsAuthenticated])
     def my_projects(self, request):

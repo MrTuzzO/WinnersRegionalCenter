@@ -5,6 +5,10 @@ from user.permission import IsAdmin
 from .models import BusinessSetting
 from .serializers import BusinessSettingSerializer
 from django.core.cache import cache
+from django.http import HttpResponse
+
+def home(request):
+    return HttpResponse("<h1 style='text-align: center; margin-top: 50px;'>Welcome to Winners Regional Center</h1>")
 
 class BusinessSettingView(APIView):
 

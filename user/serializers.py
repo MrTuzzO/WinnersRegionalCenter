@@ -3,7 +3,8 @@ from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import OTP, User
 from .utils import send_otp_email
-
+from investment.models import Investment
+from project.models import Project
 
 # class RegisterSerializer(serializers.ModelSerializer):
 #     password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -176,3 +177,45 @@ class ResetPasswordSerializer(serializers.Serializer):
         attrs["user"] = user
         attrs["otp_obj"] = otp_obj
         return attrs
+
+# Admin-only serializer for user management
+class UserListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id", "name", "email",
+            "phone_number", "country", "is_active", "created_at",
+        ]
+        read_only_fields = ("id", "created_at")
+
+class UserDetailSerializer(serializers.ModelSerializer):
+    projects = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id", "name", "email",
+            "phone_number", "date_of_birth",
+            "current_address", "country",
+            "is_email_verified", "is_active", "is_staff", "created_at", "projects"
+        ]
+        read_only_fields = ("id", "created_at")
+        extra_fields = ["projects"]
+
+    def get_projects(self, obj):
+        investments = Investment.objects.filter(user=obj)
+        request = self.context.get('request')
+        result = []
+        for inv in investments:
+            if inv.project.banner and request:
+                banner_url = request.build_absolute_uri(inv.project.banner.url)
+            else:
+                banner_url = inv.project.banner.url if inv.project.banner else None
+            result.append({
+                'id': inv.project.id,
+                'name': inv.project.name,
+                'banner': banner_url,
+                'status': inv.project.status,
+                'investment_amount': float(inv.investment_amount),
+            })
+        return result

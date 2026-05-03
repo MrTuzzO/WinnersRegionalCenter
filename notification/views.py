@@ -1,3 +1,4 @@
+from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -76,3 +77,12 @@ class MarkAllReadView(APIView):
         for n in notifications:
             n.is_read_by.add(request.user)
         return Response({"detail": "All notifications marked as read."})
+
+
+class NotificationUpdateDeleteView(RetrieveUpdateDestroyAPIView):
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        return Notification.objects.all()

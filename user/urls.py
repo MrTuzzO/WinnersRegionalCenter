@@ -1,6 +1,10 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from . import views
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(r'users', views.Users, basename='user')
 
 urlpatterns = [
     # Registration & email verification
@@ -21,3 +25,6 @@ urlpatterns = [
     path("forgot-password/", views.ForgotPasswordView.as_view(), name="auth-forgot-password"),
     path("reset-password/", views.ResetPasswordView.as_view(), name="auth-reset-password"),
 ]
+
+# Add router URLs
+urlpatterns += router.urls

@@ -1,3 +1,5 @@
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -7,10 +9,24 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import OTP, User
 from .serializers import *
 from .utils import send_otp_email
-
+from user.permission import IsAdmin
+from rest_framework import viewsets
 # for Api documentation
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, inline_serializer
+
+class Users(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['is_active', 'is_email_verified', 'is_staff']
+    search_fields = ['email', 'name']
+    ordering_fields = ['created_at']
+    permission_classes = [IsAdmin]
+
+    def get_serializer_class(self):
+        if self.action in ['list']:
+            return UserListSerializer
+        return UserDetailSerializer
 
 # class RegisterView(APIView):
 #     permission_classes = [AllowAny]

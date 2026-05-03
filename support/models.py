@@ -15,7 +15,10 @@ class SupportQuery(models.Model):
     
 class SupportReply(models.Model):
     query = models.ForeignKey(SupportQuery, on_delete=models.CASCADE, related_name='replies')
-    admin = models.ForeignKey(User, on_delete=models.CASCADE)
+    admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name='replies')
 
     message = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reply {self.id} to Query {self.query.id} by {self.admin}"
