@@ -1,16 +1,23 @@
 from rest_framework.response import Response
-from core.logging_context import get_request_id
 
-def success_response(message: str, status_code: int, data=None, **extra):
-    payload = {"success": True, "message": message, "request_id": get_request_id()}
-    if data is not None:
-        payload["data"] = data
-    payload.update(extra)
-    return Response(payload, status=status_code)
 
-def error_response(message: str, status_code: int, errors=None, **extra):
-    payload = {"success": False, "message": message, "request_id": get_request_id()}
-    if errors is not None:
-        payload["errors"] = errors
-    payload.update(extra)
-    return Response(payload, status=status_code)
+class SuccessResponse(Response):
+    def __init__(self, data=None, message="OK", code=200, **kwargs):
+        payload = {
+            "status": "success",
+            "code": code,
+            "message": message,
+            "data": data,
+        }
+        super().__init__(data=payload, status=code, **kwargs)
+
+
+class ErrorResponse(Response):
+    def __init__(self, message="An error occurred", errors=None, code=400, **kwargs):
+        payload = {
+            "status": "error",
+            "code": code,
+            "message": message,
+            "data": None,
+        }
+        super().__init__(data=payload, status=code, **kwargs)

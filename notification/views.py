@@ -1,12 +1,12 @@
 from rest_framework.generics import RetrieveUpdateDestroyAPIView
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 
-from core.response import success_response, error_response
 from user.permission import IsAdmin
 from .models import Notification
 from .serializers import NotificationSerializer, SendNotificationSerializer
@@ -29,7 +29,7 @@ class SendNotificationView(APIView):
         serializer = SendNotificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return success_response("Notification sent.", status.HTTP_201_CREATED)
+        return Response({"detail": "Notification sent."}, status=status.HTTP_201_CREATED)
 
 
 class MyNotificationView(APIView):
@@ -41,14 +41,7 @@ class MyNotificationView(APIView):
         paginator = PageNumberPagination()
         page = paginator.paginate_queryset(notifications, request)
         serializer = NotificationSerializer(page, many=True, context={'request': request})
-        return success_response(
-            "Notifications fetched successfully.",
-            status.HTTP_200_OK,
-            data=serializer.data,
-            count=paginator.page.paginator.count,
-            next=paginator.get_next_link(),
-            previous=paginator.get_previous_link(),
-        )
+        return paginator.get_paginated_response(serializer.data)
 
 
 class UnreadCountView(APIView):
@@ -59,11 +52,7 @@ class UnreadCountView(APIView):
         count = get_user_notifications(request.user).exclude(
             is_read_by=request.user
         ).count()
-        return success_response(
-            "Unread count fetched successfully.",
-            status.HTTP_200_OK,
-            data={"unread_count": count},
-        )
+        return Response({"unread_count": count}, status=status.HTTP_200_OK)
 
 
 class MarkReadView(APIView):
@@ -74,13 +63,9 @@ class MarkReadView(APIView):
         try:
             notification = get_user_notifications(request.user).get(pk=pk)
         except Notification.DoesNotExist:
-            return error_response(
-                "Request failed",
-                status.HTTP_404_NOT_FOUND,
-                errors={"detail": "Not found."},
-            )
+            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
         notification.is_read_by.add(request.user)
-        return success_response("Marked as read.", status.HTTP_200_OK)
+        return Response({"detail": "Marked as read."}, status=status.HTTP_200_OK)
 
 
 class MarkAllReadView(APIView):
@@ -91,7 +76,7 @@ class MarkAllReadView(APIView):
         notifications = get_user_notifications(request.user).exclude(is_read_by=request.user)
         for n in notifications:
             n.is_read_by.add(request.user)
-        return success_response("All notifications marked as read.", status.HTTP_200_OK)
+        return Response({"detail": "All notifications marked as read."}, status=status.HTTP_200_OK)
 
 
 class NotificationUpdateDeleteView(RetrieveUpdateDestroyAPIView):

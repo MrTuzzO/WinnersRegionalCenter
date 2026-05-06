@@ -2,10 +2,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from core.response import success_response, error_response
 from .models import OTP, User
 from .serializers import *
 from .utils import send_otp_email
@@ -59,7 +59,7 @@ class VerifyEmailView(APIView):
         user.is_email_verified = True
         user.save(update_fields=["is_email_verified"])
 
-        return success_response("Email verified successfully.", status.HTTP_200_OK)
+        return Response({"detail": "Email verified successfully."}, status=status.HTTP_200_OK)
 
 
 class ResendOTPView(APIView):
@@ -74,7 +74,7 @@ class ResendOTPView(APIView):
         purpose = serializer.validated_data["purpose"]
         send_otp_email(user, purpose)
 
-        return success_response("OTP sent successfully.", status.HTTP_200_OK)
+        return Response({"detail": "OTP sent successfully."}, status=status.HTTP_200_OK)
 
 
 class LoginView(APIView):
@@ -86,14 +86,13 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        return success_response(
-            "Login successful.",
-            status.HTTP_200_OK,
-            data={
+        return Response(
+            {
                 "access": data["access"],
                 "refresh": data["refresh"],
                 "user": UserProfileSerializer(data["user"]).data,
             },
+            status=status.HTTP_200_OK,
         )
 
 
@@ -110,20 +109,18 @@ class LogoutView(APIView):
     def post(self, request):
         refresh_token = request.data.get("refresh")
         if not refresh_token:
-            return error_response(
-                "Request failed",
-                status.HTTP_400_BAD_REQUEST,
-                errors={"detail": "Refresh token is required."},
+            return Response(
+                {"detail": "Refresh token is required."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         try:
             RefreshToken(refresh_token).blacklist()
         except TokenError:
-            return error_response(
-                "Request failed",
-                status.HTTP_400_BAD_REQUEST,
-                errors={"detail": "Invalid or already-expired token."},
+            return Response(
+                {"detail": "Invalid or already-expired token."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        return success_response("Logged out successfully.", status.HTTP_200_OK)
+        return Response({"detail": "Logged out successfully."}, status=status.HTTP_200_OK)
 
 
 class ProfileView(APIView):
@@ -131,22 +128,14 @@ class ProfileView(APIView):
 
     @extend_schema(responses={200: UserProfileSerializer})
     def get(self, request):
-        return success_response(
-            "Profile fetched successfully.",
-            status.HTTP_200_OK,
-            data=UserProfileSerializer(request.user).data,
-        )
+        return Response(UserProfileSerializer(request.user).data, status=status.HTTP_200_OK)
 
     @extend_schema(request=UserProfileSerializer, responses={200: UserProfileSerializer})    
     def patch(self, request):
         serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return success_response(
-            "Profile updated successfully.",
-            status.HTTP_200_OK,
-            data=serializer.data,
-        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ChangePasswordView(APIView):
@@ -158,7 +147,7 @@ class ChangePasswordView(APIView):
         serializer.is_valid(raise_exception=True)
         request.user.set_password(serializer.validated_data["new_password"])
         request.user.save(update_fields=["password"])
-        return success_response("Password changed successfully.", status.HTTP_200_OK)
+        return Response({"detail": "Password changed successfully."}, status=status.HTTP_200_OK)
 
 
 class ForgotPasswordView(APIView):
@@ -175,9 +164,9 @@ class ForgotPasswordView(APIView):
         except User.DoesNotExist:
             pass  # silently ignore – prevent user enumeration
 
-        return success_response(
-            "If an account with that email exists, a password reset OTP has been sent.",
-            status.HTTP_200_OK,
+        return Response(
+            {"detail": "If an account with that email exists, a password reset OTP has been sent."},
+            status=status.HTTP_200_OK,
         )
 
 
@@ -198,7 +187,7 @@ class ResetPasswordView(APIView):
         user.set_password(serializer.validated_data["new_password"])
         user.save(update_fields=["password"])
 
-        return success_response(
-            "Password reset successfully. You can now log in.",
-            status.HTTP_200_OK,
+        return Response(
+            {"detail": "Password reset successfully. You can now log in."},
+            status=status.HTTP_200_OK,
         )

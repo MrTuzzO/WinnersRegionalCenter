@@ -34,6 +34,7 @@ INSTALLED_APPS += [
     'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
     'django_cleanup.apps.CleanupConfig',
+    'corsheaders',
 
     # Local apps
     'core',
@@ -48,8 +49,8 @@ INSTALLED_APPS += [
 AUTH_USER_MODEL = 'user.User'
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    "core.middleware.request_id.RequestIdMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -136,12 +137,13 @@ REST_FRAMEWORK = {
         'core.renderers.EnvelopedJSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 10,
+    "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardPagination",
+    "PAGE_SIZE": 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 
-    "EXCEPTION_HANDLER": "core.exception_handler.custom_exception_handler",
+    "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
+    "DEFAULT_RENDERER_CLASSES": ["core.renderers.StandardRenderer"],
     "DEFAULT_THROTTLE_RATES": {
         "user": "60/min",
         "anon": "5/min",
@@ -176,3 +178,17 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     # 'SERVE_INCLUDE_SCHEMA': False,
 }
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "x-csrftoken",
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]

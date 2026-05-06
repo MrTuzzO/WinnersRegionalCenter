@@ -1,61 +1,53 @@
-from collections.abc import Mapping
-from rest_framework import status
 from rest_framework.renderers import JSONRenderer
-from core.logging_context import get_request_id
 
 
-class EnvelopedJSONRenderer(JSONRenderer):
-
-    _SUCCESS_MESSAGES = {
-        status.HTTP_200_OK: "Request successful.",
-        status.HTTP_201_CREATED: "Resource created successfully.",
-        status.HTTP_202_ACCEPTED: "Request accepted.",
-        status.HTTP_204_NO_CONTENT: "Request completed successfully.",
-    }
-
+class StandardRenderer(JSONRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        renderer_context = renderer_context or {}
-        request = renderer_context.get("request")
         response = renderer_context.get("response")
+        status_code = response.status_code
 
-        if self._should_skip_wrapping(request):
+        if isinstance(data, dict) and "status" in data and "code" in data:
             return super().render(data, accepted_media_type, renderer_context)
 
-        if self._is_already_enveloped(data):
-            return super().render(data, accepted_media_type, renderer_context)
+        is_error = status_code >= 400
 
-        status_code = getattr(response, "status_code", status.HTTP_200_OK)
-        if status_code >= 400:
-            return super().render(data, accepted_media_type, renderer_context)
-
-        payload = {
-            "success": True,
-            "message": self._SUCCESS_MESSAGES.get(status_code, "Request successful."),
-            "request_id": get_request_id(),
+        wrapped = {
+            "status": "error" if is_error else "success",
+            "code": status_code,
+            "message": _extract_message(data, status_code, is_error),
+            "data": _extract_data(data, is_error),
         }
 
-        if self._is_paginated(data):
-            payload["data"] = data.get("results", [])
-            payload["count"] = data.get("count")
-            payload["next"] = data.get("next")
-            payload["previous"] = data.get("previous")
-        elif data is not None:
-            payload["data"] = data
+        return super().render(wrapped, accepted_media_type, renderer_context)
 
-        return super().render(payload, accepted_media_type, renderer_context)
 
-    @staticmethod
-    def _is_paginated(data) -> bool:
-        return isinstance(data, Mapping) and {"count", "next", "previous", "results"}.issubset(data.keys())
+def _extract_message(data, status_code, is_error):
+    if isinstance(data, dict) and "detail" in data:
+        detail = data["detail"]
+        return str(detail[0] if isinstance(detail, list) else detail).capitalize()
 
-    @staticmethod
-    def _is_already_enveloped(data) -> bool:
-        return isinstance(data, Mapping) and {"success", "message", "request_id"}.issubset(data.keys())
+    if is_error:
+        return _default_message(status_code)
 
-    @staticmethod
-    def _should_skip_wrapping(request) -> bool:
-        if request is None:
-            return False
+    return "OK"
 
-        path = request.path.rstrip("/")
-        return path.endswith("/api/v1/schema")
+
+def _extract_data(data, is_error):
+    if isinstance(data, dict) and "detail" in data:
+        # "detail" is lifted to message — remaining keys go into data (or null if none)
+        rest = {k: v for k, v in data.items() if k != "detail"}
+        return rest or None
+
+    return None if is_error and not isinstance(data, dict) else data
+
+
+def _default_message(status_code):
+    return {
+        400: "Bad request.",
+        401: "Unauthorized.",
+        403: "Permission denied.",
+        404: "Not found.",
+        405: "Method not allowed.",
+        429: "Too many requests.",
+        500: "Internal server error.",
+    }.get(status_code, "An error occurred.")

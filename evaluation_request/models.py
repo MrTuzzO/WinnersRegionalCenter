@@ -1,7 +1,7 @@
 from django.db import models
 
 class EvaluationRequest(models.Model):
-    email = models.EmailField()
+    email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=100)
     message = models.TextField(blank=True, null=True)
     is_approved = models.BooleanField(default=False)
