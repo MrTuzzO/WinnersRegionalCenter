@@ -15,7 +15,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Application definition
 
@@ -49,6 +49,7 @@ AUTH_USER_MODEL = 'user.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "core.middleware.request_id.RequestIdMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -131,13 +132,20 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'core.renderers.EnvelopedJSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
 
-    # "DEFAULT_RENDERER_CLASSES": ["core.renderers.StandardRenderer"],
-    # "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
+    "EXCEPTION_HANDLER": "core.exception_handler.custom_exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "60/min",
+        "anon": "5/min",
+    },
 }
 
 
@@ -160,4 +168,11 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Winners Regional Center API',
+    'DESCRIPTION': 'API documentation for Winners Regional Center.',
+    'VERSION': '1.0.0',
+    # 'SERVE_INCLUDE_SCHEMA': False,
 }

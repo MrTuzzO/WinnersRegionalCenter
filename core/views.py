@@ -1,9 +1,10 @@
 from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from user.permission import IsAdmin
 from .models import BusinessSetting
 from .serializers import BusinessSettingSerializer
+from .response import success_response, error_response
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.contrib.auth import get_user_model
@@ -31,26 +32,46 @@ class BusinessSettingView(APIView):
         if obj is None:
             obj = BusinessSetting.objects.first()
             cache.set('business_setting', obj, timeout=60*60*24)  # 1 day
-        return Response(BusinessSettingSerializer(obj).data if obj else {})
+        return success_response(
+            "Business setting fetched successfully.",
+            status.HTTP_200_OK,
+            data=BusinessSettingSerializer(obj).data if obj else {},
+        )
 
     def post(self, request):
         if BusinessSetting.objects.exists():
-            return Response({"detail": "Already exists. Use PATCH to update."}, status=400)
+            return error_response(
+                "Request failed",
+                status.HTTP_400_BAD_REQUEST,
+                errors={"detail": "Already exists. Use PATCH to update."},
+            )
         serializer = BusinessSettingSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         cache.delete('business_setting')
-        return Response(serializer.data, status=201)
+        return success_response(
+            "Business setting created successfully.",
+            status.HTTP_201_CREATED,
+            data=serializer.data,
+        )
 
     def patch(self, request):
         obj = BusinessSetting.objects.first()
         if not obj:
-            return Response({"detail": "Not found. Use POST to create."}, status=404)
+            return error_response(
+                "Request failed",
+                status.HTTP_404_NOT_FOUND,
+                errors={"detail": "Not found. Use POST to create."},
+            )
         serializer = BusinessSettingSerializer(obj, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         cache.delete('business_setting')
-        return Response(serializer.data)
+        return success_response(
+            "Business setting updated successfully.",
+            status.HTTP_200_OK,
+            data=serializer.data,
+        )
     
 # User Dashboard view
 class UserDashboardView(APIView):
@@ -66,7 +87,7 @@ class UserDashboardView(APIView):
             "active_projects": active_projects,
             "total_projects": total_projects
         }
-        return Response(data)
+        return success_response("Dashboard fetched successfully.", status.HTTP_200_OK, data=data)
     
 class AdminDashboardView(APIView):
     permission_classes = [IsAdmin]
@@ -111,4 +132,4 @@ class AdminDashboardView(APIView):
             "total_investments": investment_counts["total_investments"],
             "investor_growth": {"labels": months, "data": counts}
         }
-        return Response(data)
+        return success_response("Dashboard fetched successfully.", status.HTTP_200_OK, data=data)

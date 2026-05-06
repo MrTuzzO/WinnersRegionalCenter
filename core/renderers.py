@@ -1,42 +1,61 @@
-import json
+from collections.abc import Mapping
+from rest_framework import status
 from rest_framework.renderers import JSONRenderer
+from core.logging_context import get_request_id
 
 
-class StandardRenderer(JSONRenderer):
+class EnvelopedJSONRenderer(JSONRenderer):
+
+    _SUCCESS_MESSAGES = {
+        status.HTTP_200_OK: "Request successful.",
+        status.HTTP_201_CREATED: "Resource created successfully.",
+        status.HTTP_202_ACCEPTED: "Request accepted.",
+        status.HTTP_204_NO_CONTENT: "Request completed successfully.",
+    }
+
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        response = renderer_context.get("response") if renderer_context else None
-        status_code = response.status_code if response else 200
+        renderer_context = renderer_context or {}
+        request = renderer_context.get("request")
+        response = renderer_context.get("response")
 
-        # Let exception handler own 4xx/5xx — don't double-wrap
+        if self._should_skip_wrapping(request):
+            return super().render(data, accepted_media_type, renderer_context)
+
+        if self._is_already_enveloped(data):
+            return super().render(data, accepted_media_type, renderer_context)
+
+        status_code = getattr(response, "status_code", status.HTTP_200_OK)
         if status_code >= 400:
             return super().render(data, accepted_media_type, renderer_context)
 
-        # 204 No Content — data is None
-        if data is None:
-            payload = {
-                "ok": True,
-                "data": None,
-                "status": status_code,
-            }
-            return json.dumps(payload).encode()
+        payload = {
+            "success": True,
+            "message": self._SUCCESS_MESSAGES.get(status_code, "Request successful."),
+            "request_id": get_request_id(),
+        }
 
-        # Paginated response — DRF pagination injects 'results' key
-        if isinstance(data, dict) and "results" in data:
-            payload = {
-                "ok": True,
-                "data": data["results"],
-                "pagination": {
-                    "count": data.get("count"),
-                    "next": data.get("next"),
-                    "previous": data.get("previous"),
-                },
-                "status": status_code,
-            }
-        else:
-            payload = {
-                "ok": True,
-                "data": data,
-                "status": status_code,
-            }
+        if self._is_paginated(data):
+            payload["data"] = data.get("results", [])
+            payload["count"] = data.get("count")
+            payload["next"] = data.get("next")
+            payload["previous"] = data.get("previous")
+        elif data is not None:
+            payload["data"] = data
 
-        return json.dumps(payload).encode()
+        return super().render(payload, accepted_media_type, renderer_context)
+
+    @staticmethod
+    def _is_paginated(data) -> bool:
+        return isinstance(data, Mapping) and {"count", "next", "previous", "results"}.issubset(data.keys())
+
+    @staticmethod
+    def _is_already_enveloped(data) -> bool:
+        return isinstance(data, Mapping) and {"success", "message", "request_id"}.issubset(data.keys())
+
+    @staticmethod
+    def _should_skip_wrapping(request) -> bool:
+        if request is None:
+            return False
+
+        path = request.path.rstrip("/")
+        return path.endswith("/api/v1/schema")
