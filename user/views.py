@@ -1,12 +1,15 @@
+from django.conf import settings
+from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import OTP, User
+from .models import OTP, PasswordResetToken, User
 from .serializers import *
 from .utils import send_otp_email
 from user.permission import IsAdmin
@@ -64,6 +67,8 @@ class VerifyEmailView(APIView):
 
 class ResendOTPView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "resend_otp"
 
     @extend_schema(request=ResendOTPSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
@@ -128,14 +133,14 @@ class ProfileView(APIView):
 
     @extend_schema(responses={200: UserProfileSerializer})
     def get(self, request):
-        return Response(UserProfileSerializer(request.user).data, status=status.HTTP_200_OK)
+        return Response(UserProfileSerializer(request.user, context={"request": request}).data)
 
     @extend_schema(request=UserProfileSerializer, responses={200: UserProfileSerializer})    
     def patch(self, request):
-        serializer = UserProfileSerializer(request.user, data=request.data, partial=True)
+        serializer = UserProfileSerializer(request.user, data=request.data, partial=True, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.data)
 
 
 class ChangePasswordView(APIView):
@@ -152,6 +157,8 @@ class ChangePasswordView(APIView):
 
 class ForgotPasswordView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "forgot_password"
 
     @extend_schema(request=ForgotPasswordSerializer, responses={200: OpenApiTypes.OBJECT})
     def post(self, request):
@@ -170,6 +177,34 @@ class ForgotPasswordView(APIView):
         )
 
 
+class VerifyPasswordResetOTPView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "verify_reset_otp"
+
+    @extend_schema(request=VerifyPasswordResetOTPSerializer, responses={200: OpenApiTypes.OBJECT})
+    def post(self, request):
+        serializer = VerifyPasswordResetOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data["user"]
+        otp_obj = serializer.validated_data["otp_obj"]
+
+        with transaction.atomic():
+            otp_obj.is_used = True
+            otp_obj.save(update_fields=["is_used"])
+            reset_token, _ = PasswordResetToken.create_for_user(user)
+
+        expiry = getattr(settings, "PASSWORD_RESET_TOKEN_EXPIRY_MINUTES", 10)
+        return Response(
+            {
+                "reset_token": reset_token,
+                "expires_in_minutes": expiry,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class ResetPasswordView(APIView):
     permission_classes = [AllowAny]
 
@@ -179,13 +214,13 @@ class ResetPasswordView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
-        otp_obj = serializer.validated_data["otp_obj"]
+        token_obj = serializer.validated_data["token_obj"]
 
-        otp_obj.is_used = True
-        otp_obj.save(update_fields=["is_used"])
-
-        user.set_password(serializer.validated_data["new_password"])
-        user.save(update_fields=["password"])
+        with transaction.atomic():
+            token_obj.is_used = True
+            token_obj.save(update_fields=["is_used"])
+            user.set_password(serializer.validated_data["new_password"])
+            user.save(update_fields=["password"])
 
         return Response(
             {"detail": "Password reset successfully. You can now log in."},

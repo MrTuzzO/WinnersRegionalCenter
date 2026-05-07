@@ -2,8 +2,8 @@ from django.db import models
 
 class BusinessSetting(models.Model):
     about_us = models.TextField(blank=True, null=True)
-    privacy_policy = models.TextField(blank=True, null=True)
-    terms_of_service = models.TextField(blank=True, null=True)
+    legal_privacy_policy = models.TextField(blank=True, null=True)
+    legal_terms_of_use_policy = models.TextField(blank=True, null=True)
 
     # Contact info
     contact_email = models.EmailField(blank=True, null=True)

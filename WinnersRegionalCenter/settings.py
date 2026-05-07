@@ -147,8 +147,15 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "user": "60/min",
         "anon": "5/min",
+        "forgot_password": "3/hour",
+        "resend_otp": "3/hour",
+        "verify_reset_otp": "10/hour",
     },
 }
+
+OTP_EXPIRY_MINUTES = 10
+OTP_MAX_ATTEMPTS = 5
+PASSWORD_RESET_TOKEN_EXPIRY_MINUTES = 10
 
 
 if DEBUG:

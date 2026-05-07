@@ -1,9 +1,7 @@
 import secrets
-
 from django.conf import settings
 from django.core.mail import send_mail
-
-from .models import OTP
+from .models import OTP, PasswordResetToken
 
 
 def generate_otp_code() -> str:
@@ -12,6 +10,8 @@ def generate_otp_code() -> str:
 
 def send_otp_email(user, purpose: str) -> OTP:
     OTP.objects.filter(user=user, purpose=purpose, is_used=False).update(is_used=True)
+    if purpose == OTP.PURPOSE_PASSWORD_RESET:
+        PasswordResetToken.objects.filter(user=user, is_used=False).update(is_used=True)
 
     code = generate_otp_code()
     otp = OTP.objects.create(user=user, code=code, purpose=purpose)
