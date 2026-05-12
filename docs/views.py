@@ -4,35 +4,33 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from .models import RequiredDocument, UserDocument
-from .serializers import (
-    AdminRequiredDocumentSerializer,
-    AdminReviewSerializer,
-    AdminSubmissionSerializer,
-    AdminUserStepDetailSerializer,
-    AdminUserStepListSerializer,
-    UploadStepSerializer,
-    UserProgressSerializer,
-)
+from user.permission import IsAdmin
+from .serializers import *
 
 User = get_user_model()
 
 
-def _safe_file_url(value):
+def _safe_file_url(value, request=None):
     if not value:
         return ''
     try:
-        return value.url
+        url = value.url
     except Exception:
         name = getattr(value, 'name', '')
         if isinstance(name, bytes):
-            return name.decode('utf-8', errors='replace')
-        return str(name)
+            name = name.decode('utf-8', errors='replace')
+        url = str(name)
+
+    if request is not None and isinstance(url, str) and url.startswith('/'):
+        try:
+            return request.build_absolute_uri(url)
+        except Exception:
+            pass
+    return url
 
 
-def get_user_progress_data(user):
-    """Get complete progress data for a user."""
+def get_user_progress_data(user, request=None):
     required_docs = list(RequiredDocument.objects.order_by('step'))
     total_steps = len(required_docs)
     user_docs_qs = UserDocument.objects.filter(user=user).select_related('required_document')
@@ -51,8 +49,8 @@ def get_user_progress_data(user):
                     'required_document_id': req_doc.id,
                     'step': req_doc.step,
                     'title': req_doc.title,
-                    'download_file': _safe_file_url(req_doc.file),
-                    'signed_file': _safe_file_url(user_doc.signed_file),
+                    'download_file': _safe_file_url(req_doc.file, request),
+                    'signed_file': _safe_file_url(user_doc.signed_file, request),
                     'status': user_doc.status,
                     'reviewed_at': user_doc.reviewed_at,
                 }
@@ -64,8 +62,8 @@ def get_user_progress_data(user):
             'required_document_id': req_doc.id,
             'step': req_doc.step,
             'title': req_doc.title,
-            'download_file': _safe_file_url(req_doc.file),
-            'signed_file': _safe_file_url(user_doc.signed_file) if user_doc else None,
+            'download_file': _safe_file_url(req_doc.file, request),
+            'signed_file': _safe_file_url(user_doc.signed_file, request) if user_doc else None,
             'status': user_doc.status if user_doc else 'not_started',
             'admin_note': user_doc.admin_note if user_doc else '',
             'submitted_at': user_doc.submitted_at if user_doc else None,
@@ -86,9 +84,6 @@ def get_user_progress_data(user):
     }
 
 
-# ── User ──────────────────────────────────────────────────────────────────
-
-
 @extend_schema_view(
     get=extend_schema(
         summary='User workflow progress',
@@ -100,7 +95,7 @@ class UserProgressView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        progress = get_user_progress_data(request.user)
+        progress = get_user_progress_data(request.user, request)
         if progress['total_steps'] == 0:
             return Response({'detail': 'No required documents configured yet.'}, status=status.HTTP_404_NOT_FOUND)
         return Response(progress)
@@ -118,7 +113,7 @@ class UserUploadCurrentStepView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        progress = get_user_progress_data(request.user)
+        progress = get_user_progress_data(request.user, request)
         if progress['total_steps'] == 0:
             return Response({'detail': 'No required documents configured yet.'}, status=status.HTTP_404_NOT_FOUND)
         if progress['all_completed']:
@@ -151,14 +146,14 @@ class UserUploadCurrentStepView(APIView):
                 status='submitted',
             )
 
-        return Response(get_user_progress_data(request.user), status=status.HTTP_200_OK)
+        return Response(get_user_progress_data(request.user, request), status=status.HTTP_200_OK)
 
 
 # ── Admin ─────────────────────────────────────────────────────────────────
 
 class AdminRequiredDocumentViewSet(viewsets.ModelViewSet):
     serializer_class = AdminRequiredDocumentSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsAdmin]
     queryset = RequiredDocument.objects.all()
 
 
@@ -174,14 +169,13 @@ class AdminUserStepListView(generics.ListAPIView):
     serializer_class = AdminUserStepListSerializer
 
     def get_queryset(self):
-        # return User.objects.filter(is_staff=False).order_by('id')
-        return User.objects.order_by('id')
+        return User.objects.filter(is_staff=False).order_by('id')
 
     def list(self, request, *args, **kwargs):
         users = self.get_queryset()
         rows = []
         for user in users:
-            progress = get_user_progress_data(user)
+            progress = get_user_progress_data(user, request)
             status_label = 'Completed' if progress['all_completed'] else (f"Step {progress['current_step']}" if progress['current_step'] else 'Pending')
             rows.append({
                 'user_id': user.id,
@@ -207,17 +201,17 @@ class AdminUserStepDetailView(APIView):
 
     def get(self, request, user_id):
         user = generics.get_object_or_404(User, pk=user_id)
-        progress = get_user_progress_data(user)
+        progress = get_user_progress_data(user, request)
         submitted_qs = UserDocument.objects.filter(user=user).select_related('user', 'required_document').order_by(
             'required_document__step', '-submitted_at'
         )
         data = {
             'user_id': user.id,
-            'user_name': user.get_full_name() if hasattr(user, 'get_full_name') and user.get_full_name() else getattr(user, 'email', str(user)),
-            'user_email': getattr(user, 'email', ''),
+            'user_name': user.name,
+            'user_email': user.email,
             'total_steps': progress['total_steps'],
             'current_step': progress['current_step'],
-            'submitted_documents': AdminSubmissionSerializer(submitted_qs, many=True).data,
+            'submitted_documents': AdminSubmissionSerializer(submitted_qs, many=True, context={'request': request}).data,
         }
         return Response(data)
 
@@ -241,4 +235,4 @@ class AdminReviewView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save(reviewed_at=timezone.now())
 
-        return Response(AdminSubmissionSerializer(user_doc).data, status=status.HTTP_200_OK)
+        return Response(AdminSubmissionSerializer(user_doc, context={'request': request}).data, status=status.HTTP_200_OK)

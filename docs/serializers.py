@@ -70,22 +70,32 @@ class AdminSubmissionSerializer(serializers.ModelSerializer):
             return full_name
         return getattr(obj.user, 'email', str(obj.user))
 
-    def _safe_file_url(self, value):
+    def _safe_file_url(self, value, request=None):
         if not value:
             return ''
         try:
-            return value.url
+            url = value.url
         except Exception:
             name = getattr(value, 'name', '')
             if isinstance(name, bytes):
-                return name.decode('utf-8', errors='replace')
-            return str(name)
+                name = name.decode('utf-8', errors='replace')
+            url = str(name)
+
+        # Build absolute URL if request is present and url is relative
+        if request is not None and isinstance(url, str) and url.startswith('/'):
+            try:
+                return request.build_absolute_uri(url)
+            except Exception:
+                pass
+        return url
 
     def get_download_file(self, obj):
-        return self._safe_file_url(getattr(obj.required_document, 'file', None))
+        request = self.context.get('request') if hasattr(self, 'context') else None
+        return self._safe_file_url(getattr(obj.required_document, 'file', None), request=request)
 
     def get_signed_file(self, obj):
-        return self._safe_file_url(getattr(obj, 'signed_file', None))
+        request = self.context.get('request') if hasattr(self, 'context') else None
+        return self._safe_file_url(getattr(obj, 'signed_file', None), request=request)
 
 
 class AdminReviewSerializer(serializers.ModelSerializer):
