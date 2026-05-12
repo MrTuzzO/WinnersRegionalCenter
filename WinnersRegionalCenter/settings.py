@@ -44,6 +44,7 @@ INSTALLED_APPS += [
     'evaluation_request',
     'notification',
     'support',
+    'docs',
 ]
 
 AUTH_USER_MODEL = 'user.User'

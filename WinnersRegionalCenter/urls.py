@@ -18,6 +18,7 @@ urlpatterns = [
     path('api/v1/', include('investment.urls')),
     path('api/v1/', include('notification.urls')),
     path('api/v1/', include('support.urls')),
+    path('api/v1/', include('docs.urls')),
 ]
 
 if settings.DEBUG:

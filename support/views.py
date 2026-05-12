@@ -6,7 +6,7 @@ from user.permission import IsAdmin, IsAdminOrReadOnly
 
 class SupportQueryViewSet(viewsets.ModelViewSet):
     serializer_class = SupportQuerySerializer
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['is_answered']
 

@@ -20,12 +20,44 @@ class ProjectViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description']
     ordering_fields = ['created_at']
 
+    from drf_spectacular.utils import extend_schema, OpenApiParameter
+
+    @extend_schema(
+        summary="List user's projects",
+        description="Returns the list of projects the authenticated user has invested in. Supports filtering by project status and investment status.",
+        parameters=[
+            OpenApiParameter(
+                name="project_status",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter by project status (active, completed)"
+            ),
+            OpenApiParameter(
+                name="investment_status",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Filter by investment status (pending, approved, rejected)"
+            ),
+        ],
+        responses={200: ProjectSerializer(many=True)},
+    )
     @action(detail=False, methods=['get'], url_path='my_projects', permission_classes=[IsAuthenticated])
     def my_projects(self, request):
         user = request.user
+        project_status = request.query_params.get('project_status')
+        investment_status = request.query_params.get('investment_status')
+
         investments = user.investments.all()
-        projects = Project.objects.filter(investments__in=investments).distinct()
-        
+        if investment_status:
+            investments = investments.filter(status=investment_status)
+
+        projects = Project.objects.filter(investments__in=investments)
+        if project_status:
+            projects = projects.filter(status=project_status)
+        projects = projects.distinct()
+
         page = self.paginate_queryset(projects)
         if page is not None:
             serializer = self.get_serializer(page, many=True)

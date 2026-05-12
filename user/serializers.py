@@ -112,11 +112,6 @@ class LoginSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     profile_image = serializers.SerializerMethodField()
-
-    def get_role(self, obj):
-        if obj.is_superuser or obj.is_staff:
-            return "admin"
-        return "user"
     
     class Meta:
         model = User
@@ -128,6 +123,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "email", 'role',"is_email_verified", "created_at")
 
+    def get_role(self, obj):
+        if obj.is_superuser or obj.is_staff:
+            return "admin"
+        return "user"
+
     def get_profile_image(self, obj):
         request = self.context.get('request')
         if obj.profile_image:
@@ -136,6 +136,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(url)
             return url
         return None
+    
+    def update(self, instance, validated_data):
+        profile_image = self.context["request"].FILES.get("profile_image")
+        if profile_image is not None:
+            instance.profile_image = profile_image
+        elif "profile_image" in self.context["request"].data and not self.context["request"].FILES.get("profile_image"):
+            instance.profile_image = None
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
 
 class ChangePasswordSerializer(serializers.Serializer):
