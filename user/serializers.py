@@ -6,6 +6,7 @@ from .models import OTP, PasswordResetToken, User
 from .utils import send_otp_email
 from investment.models import Investment
 from project.models import Project
+from user.utility import is_all_steps_completed
 
 # class RegisterSerializer(serializers.ModelSerializer):
 #     password = serializers.CharField(write_only=True, validators=[validate_password])
@@ -112,13 +113,14 @@ class LoginSerializer(serializers.Serializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
     profile_image = serializers.SerializerMethodField()
+    complete_profile = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = (
             "id", "name", "email", "profile_image", "role",
             "phone_number", "date_of_birth",
-            "current_address", "country",
+            "current_address", "country", "complete_profile",
             "is_email_verified", "created_at",
         )
         read_only_fields = ("id", "email", 'role',"is_email_verified", "created_at")
@@ -148,6 +150,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+    def get_complete_profile(self, obj):
+        return is_all_steps_completed(obj)
+    
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)
@@ -248,9 +253,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            "id", "name", "email",
-            "phone_number", "date_of_birth",
-            "current_address", "country",
+            "id", "name", "email", "profile_image",
+            "phone_number", "date_of_birth", "current_address", "country",
             "is_email_verified", "is_active", "is_staff", "created_at", "projects"
         ]
         read_only_fields = ("id", "created_at")
@@ -271,5 +275,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
                 'banner': banner_url,
                 'status': inv.project.status,
                 'investment_amount': float(inv.investment_amount),
+                'start_date': inv.project.project_start_date,
+                'end_date': inv.project.project_end_date,
             })
         return result

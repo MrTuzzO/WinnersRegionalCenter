@@ -181,7 +181,6 @@ class AdminUserStepListView(generics.ListAPIView):
                 'user_id': user.id,
                 'user_name': user.name,
                 'user_email': user.email,
-                # 'total_steps': progress['total_steps'],
                 'completed_steps': progress['completed_steps'],
                 'current_step': progress['current_step'],
                 'status_label': status_label,

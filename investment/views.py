@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from .models import Investment
 from user.permission import IsAdmin
+from user.utility import is_all_steps_completed
+from .serializers import *
 
 class InvestmentViewSet(viewsets.ModelViewSet):
     queryset = Investment.objects.all()
@@ -24,6 +26,8 @@ class InvestmentViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated()]
         
     def perform_create(self, serializer):
+        if not is_all_steps_completed(self.request.user):
+            raise serializers.ValidationError("You must complete all document steps before investing.")
         serializer.save(user=self.request.user, status='pending')
 
     def get_queryset(self):

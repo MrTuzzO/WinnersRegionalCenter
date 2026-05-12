@@ -3,7 +3,6 @@ from rest_framework import serializers
 from .models import RequiredDocument, UserDocument
 User = get_user_model()
 
-
 class UploadStepSerializer(serializers.Serializer):
     signed_file = serializers.FileField(required=True)
 
@@ -81,7 +80,6 @@ class AdminSubmissionSerializer(serializers.ModelSerializer):
                 name = name.decode('utf-8', errors='replace')
             url = str(name)
 
-        # Build absolute URL if request is present and url is relative
         if request is not None and isinstance(url, str) and url.startswith('/'):
             try:
                 return request.build_absolute_uri(url)
@@ -110,7 +108,6 @@ class AdminReviewSerializer(serializers.ModelSerializer):
 
 
 class AdminUserStepListSerializer(serializers.Serializer):
-    """Admin table view: one row per user."""
     user_id = serializers.IntegerField()
     user_name = serializers.CharField()
     user_email = serializers.CharField(allow_blank=True)
@@ -121,7 +118,6 @@ class AdminUserStepListSerializer(serializers.Serializer):
 
 
 class AdminUserStepDetailSerializer(serializers.Serializer):
-    """Admin detail view: one user and all submitted docs list."""
     user_id = serializers.IntegerField()
     user_name = serializers.CharField()
     user_email = serializers.CharField(allow_blank=True)
