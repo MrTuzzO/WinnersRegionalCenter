@@ -169,21 +169,56 @@ class AdminUserStepListView(generics.ListAPIView):
     serializer_class = AdminUserStepListSerializer
 
     def get_queryset(self):
-        return User.objects.filter(is_staff=False).order_by('id')
-
+        # return User.objects.filter(is_staff=False).order_by('id')
+        return User.objects.all().order_by('id')
+    
     def list(self, request, *args, **kwargs):
+        from django.db.models import Q
+        
+        # Get query parameters for filtering and searching
+        search = request.query_params.get('search', '').strip()
+        step_status = request.query_params.get('step_status', '').strip()
+        current_step = request.query_params.get('current_step', '').strip()
+        
+        # Get base queryset
         users = self.get_queryset()
+        
+        # Apply search filter (name, email, phone)
+        if search:
+            users = users.filter(
+                Q(name__icontains=search) | 
+                Q(email__icontains=search) | 
+                Q(phone_number__icontains=search)
+            )
+        
         rows = []
         for user in users:
             progress = get_user_progress_data(user, request)
             status_label = 'Completed' if progress['all_completed'] else (f"Step {progress['current_step']}" if progress['current_step'] else 'Pending')
+            user_step_status = 'completed' if progress['all_completed'] else ('in_progress' if progress['current_step'] else 'pending')
+            
+            # Apply step_status filter
+            if step_status and user_step_status != step_status:
+                continue
+            
+            # Apply current_step filter
+            if current_step:
+                try:
+                    step_num = int(current_step)
+                    if progress['current_step'] != step_num:
+                        continue
+                except ValueError:
+                    pass
+            
             rows.append({
                 'user_id': user.id,
                 'user_name': user.name,
                 'user_email': user.email,
+                'user_phone': user.phone_number,
                 'completed_steps': progress['completed_steps'],
                 'current_step': progress['current_step'],
-                'status_label': status_label,
+                'step_label': status_label,
+                'step_status': user_step_status,
             })
         return Response(rows)
 
