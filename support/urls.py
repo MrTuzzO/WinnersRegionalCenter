@@ -1,8 +1,8 @@
-from rest_framework.routers import DefaultRouter
-from .views import SupportQueryViewSet, SupportReplyViewSet
+from django.urls import path
+from .views import UserQueryListCreateView, AdminQueryListView, AdminReplyCreateView
 
-router = DefaultRouter()
-router.register(r'support/queries', SupportQueryViewSet, basename='queries')
-router.register(r'support/replies', SupportReplyViewSet, basename='replies')
-
-urlpatterns = router.urls
+urlpatterns = [
+    path('support/queries/', UserQueryListCreateView.as_view()),
+    path('support/admin/queries/', AdminQueryListView.as_view()),
+    path('support/admin/queries/<int:query_id>/reply/', AdminReplyCreateView.as_view()),
+]

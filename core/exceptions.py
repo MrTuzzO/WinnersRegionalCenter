@@ -10,7 +10,7 @@ def custom_exception_handler(exc, context):
             "status": "error",
             "code": response.status_code,
             "message": _extract_message(exc, response.data),
-            "data": None,
+            "data": getattr(exc, "response_data", None),
         }
 
     return response

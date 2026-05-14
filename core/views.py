@@ -30,9 +30,9 @@ class BusinessSettingView(APIView):
     def get(self, request):
         obj = cache.get('business_setting')
         if obj is None:
-            obj = BusinessSetting.objects.first()
-            cache.set('business_setting', obj, timeout=60*60*24)  # 1 day
-        return Response(BusinessSettingSerializer(obj).data if obj else {}, status=status.HTTP_200_OK)
+            obj, created = BusinessSetting.objects.get_or_create()
+            cache.set('business_setting', obj, timeout=60*60*24)
+        return Response(BusinessSettingSerializer(obj).data, status=status.HTTP_200_OK)
 
     def post(self, request):
         if BusinessSetting.objects.exists():

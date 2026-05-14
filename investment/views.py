@@ -27,7 +27,9 @@ class InvestmentViewSet(viewsets.ModelViewSet):
         
     def perform_create(self, serializer):
         if not is_all_steps_completed(self.request.user):
-            raise serializers.ValidationError("You must complete all document steps before investing.")
+            exc = serializers.ValidationError("You must complete all document steps before investing.")
+            exc.response_data = {"redirect": True}
+            raise exc
         serializer.save(user=self.request.user, status='pending')
 
     def get_queryset(self):

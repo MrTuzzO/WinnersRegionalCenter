@@ -1,19 +1,23 @@
 from rest_framework import serializers
 from .models import SupportQuery, SupportReply
 
-
 class SupportReplySerializer(serializers.ModelSerializer):
-    admin = serializers.StringRelatedField(read_only=True)
-
     class Meta:
         model = SupportReply
-        fields = ['id', 'admin', 'message', 'created_at']
-
+        fields = ['id', 'message', 'created_at']
 
 class SupportQuerySerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
+    user_name = serializers.CharField(source='user.name', read_only=True)
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+    user_profile_image = serializers.SerializerMethodField()
     replies = SupportReplySerializer(many=True, read_only=True)
 
     class Meta:
         model = SupportQuery
-        fields = ['id', 'user', 'message', 'is_answered', 'created_at', 'replies']
+        fields = ['id', 'message', 'created_at', 'user_name', 'user_email', 'user_profile_image', 'replies']
+
+    def get_user_profile_image(self, obj):
+        request = self.context.get('request')
+        if obj.user.profile_image and hasattr(obj.user.profile_image, 'url'):
+            return request.build_absolute_uri(obj.user.profile_image.url)
+        return None

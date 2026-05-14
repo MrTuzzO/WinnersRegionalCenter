@@ -5,4 +5,4 @@ from .models import BusinessSetting
 class BusinessSettingSerializer(serializers.ModelSerializer):
     class Meta:
         model = BusinessSetting
-        fields = '__all__'
+        exclude = ['id',]

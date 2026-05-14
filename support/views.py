@@ -1,38 +1,28 @@
-from rest_framework import viewsets, permissions
-from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics, permissions
+from rest_framework.exceptions import PermissionDenied
 from .models import SupportQuery, SupportReply
 from .serializers import SupportQuerySerializer, SupportReplySerializer
-from user.permission import IsAdmin, IsAdminOrReadOnly
+from user.permission import IsAdmin
 
-class SupportQueryViewSet(viewsets.ModelViewSet):
+class UserQueryListCreateView(generics.ListCreateAPIView):
     serializer_class = SupportQuerySerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['is_answered']
 
     def get_queryset(self):
-        user = self.request.user
-
-        if user.is_staff:
-            return SupportQuery.objects.all().order_by('-created_at')
-
-        return SupportQuery.objects.filter(user=user).order_by('-created_at')
+        return SupportQuery.objects.filter(user=self.request.user).prefetch_related('replies')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+class AdminQueryListView(generics.ListAPIView):
+    serializer_class = SupportQuerySerializer
+    permission_classes = [IsAdmin]
+    queryset = SupportQuery.objects.prefetch_related('replies')
 
-class SupportReplyViewSet(viewsets.ModelViewSet):
+class AdminReplyCreateView(generics.CreateAPIView):
     serializer_class = SupportReplySerializer
-    permission_classes = [IsAdminOrReadOnly]
-
-    def get_queryset(self):
-        return SupportReply.objects.all()
+    permission_classes = [IsAdmin]
 
     def perform_create(self, serializer):
-        reply = serializer.save(admin=self.request.user)
-
-        # Mark query as answered
-        query = reply.query
-        query.is_answered = True
-        query.save()
+        query = SupportQuery.objects.get(pk=self.kwargs['query_id'])
+        serializer.save(admin=self.request.user, query=query)
