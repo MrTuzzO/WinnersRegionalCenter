@@ -6,8 +6,8 @@ User = get_user_model()
 
 class RequiredDocument(models.Model):
     title = models.CharField(max_length=255)
-    file = models.FileField(upload_to='required_docs/')  # admin uploads this
-    step = models.PositiveIntegerField(unique=True)       # step number, defines order
+    file = models.FileField(upload_to='required_docs/')
+    step = models.PositiveIntegerField(unique=True)
 
     class Meta:
         ordering = ['step']
@@ -18,7 +18,7 @@ class RequiredDocument(models.Model):
 
 class UserDocument(models.Model):
     STATUS_CHOICES = [
-        ('submitted', 'Submitted'),   # uploaded, awaiting admin review
+        ('submitted', 'Submitted'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
     ]
@@ -33,7 +33,7 @@ class UserDocument(models.Model):
 
     class Meta:
         unique_together = ('user', 'required_document')
-        ordering = ['required_document__step']
+        ordering = ['-submitted_at']
 
     def __str__(self):
         return f"{self.user} - Step {self.required_document.step} - {self.status}"

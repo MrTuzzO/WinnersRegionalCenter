@@ -66,7 +66,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='investors', permission_classes=[IsAdmin])
     def investors(self, request, pk=None):
         project = self.get_object()
-        investments = project.investments.filter(status='approved').order_by('-created_at')
+        investments = project.investments.order_by('-created_at')
 
         page = self.paginate_queryset(investments)
         if page is not None:

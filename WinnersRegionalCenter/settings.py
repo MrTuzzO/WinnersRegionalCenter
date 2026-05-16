@@ -45,6 +45,7 @@ INSTALLED_APPS += [
     'notification',
     'support',
     'docs',
+    'blog',
 ]
 
 AUTH_USER_MODEL = 'user.User'

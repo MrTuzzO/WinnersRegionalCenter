@@ -19,3 +19,8 @@ class EvaluationRequestViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(is_approved=False)
+    
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        response.data = {"detail": "Your evaluation request has been submitted successfully."}
+        return response

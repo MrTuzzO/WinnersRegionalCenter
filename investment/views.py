@@ -32,6 +32,11 @@ class InvestmentViewSet(viewsets.ModelViewSet):
             raise exc
         serializer.save(user=self.request.user, status='pending')
 
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        response.data = {"detail": "Investment request submitted successfully."}
+        return response
+
     def get_queryset(self):
         user = self.request.user    
         if user.is_staff:
