@@ -93,6 +93,7 @@ class LoginView(APIView):
 
         return Response(
             {
+                "detail": "Login successful.",
                 "access": data["access"],
                 "refresh": data["refresh"],
                 "user": UserProfileSerializer(data["user"]).data,
