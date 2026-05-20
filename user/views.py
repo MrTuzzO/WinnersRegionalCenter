@@ -199,6 +199,7 @@ class VerifyPasswordResetOTPView(APIView):
         expiry = getattr(settings, "PASSWORD_RESET_TOKEN_EXPIRY_MINUTES", 10)
         return Response(
             {
+                "detail": "OTP verified",
                 "reset_token": reset_token,
                 "expires_in_minutes": expiry,
             },

@@ -50,7 +50,7 @@ class EvaluationRequest(models.Model):
                 f"To get started, set your password using the following steps:\n\n"
                 f"    Email: {user.email}\n\n"
                 f"Go to the login page and click 'Forgot Password' to set your password.\n\n"
-                "Welcome aboard!"
+                "Welcome to Winners Regional Center!"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
