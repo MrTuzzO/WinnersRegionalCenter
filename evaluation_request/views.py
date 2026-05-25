@@ -49,7 +49,7 @@ class ContactFormView(APIView):
                 f"Message: {data['message']}\n"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=["wrc@winnersregionalcenter.com"],
+            recipient_list=["khirulislam5750@gmail.com"],
             fail_silently=False,
         )
 
