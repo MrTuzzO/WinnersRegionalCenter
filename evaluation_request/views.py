@@ -4,6 +4,8 @@ from django.conf import settings
 from django.core.mail import send_mail
 from .serializers import EvaluationRequestSerializer, ContactFormSerializer
 from .models import EvaluationRequest
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 from rest_framework.throttling import ScopedRateThrottle
@@ -37,7 +39,7 @@ class ContactFormView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'contact_form'
-
+    
     @staticmethod
     def _send_contact_email(data):
         send_mail(
@@ -49,10 +51,14 @@ class ContactFormView(APIView):
                 f"Message: {data['message']}\n"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=["khirulislam5750@gmail.com"],
+            recipient_list=["wrc@winnersregionalcenter.com"],
             fail_silently=False,
         )
 
+    @extend_schema(
+        request=ContactFormSerializer,
+        responses={202: OpenApiTypes.OBJECT, 503: OpenApiTypes.OBJECT},
+    )
     def post(self, request, *args, **kwargs):
         serializer = ContactFormSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
