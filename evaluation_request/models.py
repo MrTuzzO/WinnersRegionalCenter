@@ -1,4 +1,10 @@
-from django.db import models
+import logging
+from threading import Thread
+
+from django.db import models, transaction
+
+
+logger = logging.getLogger(__name__)
 
 class EvaluationRequest(models.Model):
     email = models.EmailField(unique=True)
@@ -14,6 +20,8 @@ class EvaluationRequest(models.Model):
         ordering = ['-created_at']
 
     def save(self, *args, **kwargs):
+        is_new = self.pk is None
+
         if self.pk:
             previous = EvaluationRequest.objects.filter(pk=self.pk).values("is_approved").first()
             just_approved = previous and not previous["is_approved"] and self.is_approved
@@ -22,12 +30,42 @@ class EvaluationRequest(models.Model):
 
         super().save(*args, **kwargs)
 
+        if is_new:
+            transaction.on_commit(self._notify_wrc_submission)
+
         if just_approved:
-            self._provision_user()
+            transaction.on_commit(self._provision_user)
+
+    def _send_mail_in_background(self, **mail_kwargs):
+        from django.core.mail import send_mail
+
+        def _send():
+            try:
+                send_mail(**mail_kwargs)
+            except Exception:
+                logger.exception("Failed to send evaluation request email")
+
+        Thread(target=_send, daemon=True).start()
+
+    def _notify_wrc_submission(self):
+        from django.conf import settings
+
+        self._send_mail_in_background(
+            subject="New Evaluation Request Submitted",
+            message=(
+                "A new evaluation request has been submitted.\n\n"
+                f"Full Name: {self.full_name}\n"
+                f"Email: {self.email}\n"
+                f"Phone: {self.phone or 'N/A'}\n"
+                f"Message: {self.message or 'N/A'}\n"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=["khirulislam5750@gmail.com"],
+            fail_silently=False,
+        )
 
     def _provision_user(self):
         from django.conf import settings
-        from django.core.mail import send_mail
         from user.models import User
 
         name = self.full_name or self.email.split("@")[0]
@@ -42,7 +80,7 @@ class EvaluationRequest(models.Model):
             user.is_email_verified = True
             user.save(update_fields=["password", "is_email_verified"])
 
-        send_mail(
+        self._send_mail_in_background(
             subject="Your account has been approved",
             message=(
                 f"Hi {user.name},\n\n"
