@@ -56,11 +56,10 @@ class EvaluationRequest(models.Model):
                 "A new evaluation request has been submitted.\n\n"
                 f"Full Name: {self.full_name}\n"
                 f"Email: {self.email}\n"
-                f"Phone: {self.phone or 'N/A'}\n"
                 f"Message: {self.message or 'N/A'}\n"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=["khirulislam5750@gmail.com"],
+            recipient_list=["wrc@winnersregionalcenter.com"],
             fail_silently=False,
         )
 
