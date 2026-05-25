@@ -1,8 +1,6 @@
 import logging
 from threading import Thread
-
-from django.db import models, transaction
-
+from django.db import models
 
 logger = logging.getLogger(__name__)
 
@@ -20,21 +18,16 @@ class EvaluationRequest(models.Model):
         ordering = ['-created_at']
 
     def save(self, *args, **kwargs):
-        is_new = self.pk is None
-
         if self.pk:
             previous = EvaluationRequest.objects.filter(pk=self.pk).values("is_approved").first()
             just_approved = previous and not previous["is_approved"] and self.is_approved
         else:
-            just_approved = False
+            just_approved = self.is_approved
 
         super().save(*args, **kwargs)
 
-        if is_new:
-            transaction.on_commit(self._notify_wrc_submission)
-
         if just_approved:
-            transaction.on_commit(self._provision_user)
+            self._provision_user()
 
     def _send_mail_in_background(self, **mail_kwargs):
         from django.core.mail import send_mail
@@ -46,22 +39,6 @@ class EvaluationRequest(models.Model):
                 logger.exception("Failed to send evaluation request email")
 
         Thread(target=_send, daemon=True).start()
-
-    def _notify_wrc_submission(self):
-        from django.conf import settings
-
-        self._send_mail_in_background(
-            subject="New Evaluation Request Submitted",
-            message=(
-                "A new evaluation request has been submitted.\n\n"
-                f"Full Name: {self.full_name}\n"
-                f"Email: {self.email}\n"
-                f"Message: {self.message or 'N/A'}\n"
-            ),
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=["wrc@winnersregionalcenter.com"],
-            fail_silently=False,
-        )
 
     def _provision_user(self):
         from django.conf import settings

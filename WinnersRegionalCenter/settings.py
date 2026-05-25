@@ -143,6 +143,7 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "user": "60/min",
         "anon": "5/min",
+        "contact_form": "10/hour",
         "forgot_password": "3/hour",
         "resend_otp": "3/hour",
         "verify_reset_otp": "10/hour",

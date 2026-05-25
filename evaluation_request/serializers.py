@@ -6,3 +6,9 @@ class EvaluationRequestSerializer(serializers.ModelSerializer):
         model = EvaluationRequest
         fields = '__all__'
         read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class ContactFormSerializer(serializers.Serializer):
+    full_name = serializers.CharField(max_length=100)
+    email = serializers.EmailField()
+    message = serializers.CharField()
