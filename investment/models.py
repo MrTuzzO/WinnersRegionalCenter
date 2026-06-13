@@ -32,11 +32,11 @@ class Investment(models.Model):
     status = models.CharField(max_length=20, choices=INVESTMENNT_STATUS_CHOICES, default="pending")
 
     # documents
-    passport_copy = models.FileField(upload_to='investments/passport_copies/')
-    proof_of_address = models.FileField(upload_to='investments/proof_of_address/')
-    proof_of_funds = models.FileField(upload_to='investments/proof_of_funds/')
-    bank_statements = models.FileField(upload_to='investments/bank_statements/')
-    upload_agreement = models.FileField(upload_to='investments/agreements/')
+    passport_copy = models.FileField(upload_to='investments/passport_copies/', null=True, blank=True)
+    proof_of_address = models.FileField(upload_to='investments/proof_of_address/', null=True, blank=True)
+    proof_of_funds = models.FileField(upload_to='investments/proof_of_funds/', null=True, blank=True)
+    bank_statements = models.FileField(upload_to='investments/bank_statements/', null=True, blank=True)
+    upload_agreement = models.FileField(upload_to='investments/agreements/', null=True, blank=True)
  
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

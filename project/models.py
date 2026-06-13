@@ -23,11 +23,11 @@ class Project(models.Model):
     job_impact = models.CharField(max_length=16)
 
     # Documents
-    business_plan = models.FileField(upload_to='projects/business_plans/')
-    financial_report = models.FileField(upload_to='projects/financial_reports/')
-    legal_document = models.FileField(upload_to='projects/legal_documents/')
-    agreement = models.FileField(upload_to='projects/agreements/')
-    banner = models.ImageField(upload_to='projects/banners/')
+    business_plan = models.FileField(upload_to='projects/business_plans/', null=True, blank=True)
+    financial_report = models.FileField(upload_to='projects/financial_reports/', null=True, blank=True)
+    legal_document = models.FileField(upload_to='projects/legal_documents/', null=True, blank=True)
+    agreement = models.FileField(upload_to='projects/agreements/', null=True, blank=True)
+    banner = models.ImageField(upload_to='projects/banners/', null=True, blank=True)
 
     # Status and timestamps
     status = models.CharField(max_length=16, choices=PROJECT_STATUS_CHOICES, default="active")
