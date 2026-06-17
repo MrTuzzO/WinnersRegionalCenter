@@ -1,6 +1,7 @@
 from django.db import models
 
 PROJECT_STATUS_CHOICES = [
+    ("pending", "Pending"),
     ("active", "Active"),
     ("completed", "Completed"),
 ]
