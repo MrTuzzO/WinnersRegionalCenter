@@ -31,7 +31,7 @@ class Project(models.Model):
     banner = models.ImageField(upload_to='projects/banners/', null=True, blank=True)
 
     # Status and timestamps
-    status = models.CharField(max_length=16, choices=PROJECT_STATUS_CHOICES, default="active")
+    status = models.CharField(max_length=16, choices=PROJECT_STATUS_CHOICES, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
