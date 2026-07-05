@@ -15,6 +15,7 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    "jazzmin",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +43,76 @@ INSTALLED_APPS += [
     'docs',
     'blog',
 ]
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Winners Regional Center",
+    "site_header": "Winners Regional Center",
+    "site_brand": "WRC Admin",
+    "site_logo": None,
+    "login_logo": None,
+    "welcome_sign": "Welcome to Winners Regional Center Admin",
+    "copyright": "Winners Regional Center",
+
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "hide_models": [],
+    "order_with_respect_to": [
+        "user",
+        "evaluation_request",
+        "project",
+        "investment",
+        "docs",
+        "blog",
+        "support",
+        "notification",
+        "core",
+        "auth",
+    ],
+
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.Group": "fas fa-users",
+
+        "user": "fas fa-user-circle",
+        "user.User": "fas fa-user",
+        "user.OTP": "fas fa-key",
+        "user.PasswordResetToken": "fas fa-lock",
+
+        "evaluation_request": "fas fa-clipboard-check",
+        "evaluation_request.EvaluationRequest": "fas fa-file-signature",
+
+        "project": "fas fa-building",
+        "project.Project": "fas fa-city",
+
+        "investment": "fas fa-hand-holding-usd",
+        "investment.Investment": "fas fa-chart-line",
+
+        "docs": "fas fa-folder-open",
+        "docs.RequiredDocument": "fas fa-file-alt",
+        "docs.UserDocument": "fas fa-file-contract",
+
+        "blog": "fas fa-newspaper",
+        "blog.BlogPost": "fas fa-blog",
+
+        "support": "fas fa-headset",
+        "support.SupportQuery": "fas fa-question-circle",
+        "support.SupportReply": "fas fa-reply",
+
+        "notification": "fas fa-bell",
+        "notification.Notification": "fas fa-bullhorn",
+
+        "core": "fas fa-cogs",
+        "core.BusinessSetting": "fas fa-sliders-h",
+    },
+
+    "topmenu_links": [
+        {"name": "Dashboard", "url": "admin:index", "permissions": ["user.view_user"]},
+        {"name": "View Website", "url": "/", "new_window": True},
+    ],
+
+    "show_ui_builder": False,
+}
 
 AUTH_USER_MODEL = 'user.User'
 
