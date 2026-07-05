@@ -11,5 +11,5 @@ class BlogPostViewSet(viewsets.ModelViewSet):
     serializer_class = BlogPostSerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ['created_at']
+    filterset_fields = ['created_at', 'category']
     search_fields = ['title', 'content']
